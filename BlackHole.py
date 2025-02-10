@@ -14,7 +14,6 @@ varsGif = [a_vals, b_vals, c_vals] where a_vals, b_vals, c_vals are length num a
 import os
 import numpy as np
 from scipy.integrate import ode
-from scipy.misc import imresize
 import matplotlib.pyplot as plt
 import matplotlib as mpl
 
@@ -50,8 +49,6 @@ def ray_trace(vars1d, phi_cam):
                 return -1
             else:
                 return 0
-
-        path = np.array([[R_0, S_0, Phi_0]])
 
         r = ode(f).set_integrator('dopri5')
         r.set_solout(evaluator)
@@ -129,7 +126,7 @@ def make2dmap(vars2d, vars1d):
     # phi_cam = np.arctan((sign_y*np.sqrt(x**2 + y**2)) * np.tan(F/2) / r_max)
 
     epsilon = np.sign(y)
-    epsilon[resolution[0] / 2] = np.sign(x)[resolution[0] / 2]  # sets the row at y=0 to be equal to sign(x) along that row, since we don't want it to be equal to 0.
+    epsilon[resolution[0] // 2] = np.sign(x)[resolution[0] // 2]  # sets the row at y=0 to be equal to sign(x) along that row, since we don't want it to be equal to 0.
 
     theta_cam = np.mod(np.arctan2(y, x), np.pi)
     phi_cam = epsilon * np.arctan((np.sqrt(x**2 + y**2)) * np.tan(F / 2) / r_max)
@@ -155,7 +152,6 @@ def make2dmap(vars2d, vars1d):
 def make_image(varsImage, vars2d, vars1d, gif=False, image_no=1):
     '''Creates and saves the final image as an array with colour values based on the celestial sphere chosen.'''
     map2d, CelestialSphere, resolution = varsImage
-    F = vars2d[2]
 
     print("Creating Image " + str(image_no) + "...")
 
@@ -209,7 +205,6 @@ def rotate_map(varsRotate, image_no=1):
     # print "Rotating Image " + str(image_no) + "..."
 
     map2d, a, b, c = varsRotate
-    resolution = np.shape(map2d)[:2]
 
     R = rotation_matrix(a, b, c)
 
@@ -260,7 +255,7 @@ def checkMapsExist(vars1d_desired, vars2d_desired):
                 map2DExists = False
                 file2D = 'None'
 
-        return map1DExists, map2DExists, file1D, file2D
+    return map1DExists, map2DExists, file1D, file2D
 
 
 def loadCreateMaps(vars1d_desired, vars2d_desired):
@@ -283,16 +278,16 @@ def loadCreateMaps(vars1d_desired, vars2d_desired):
         file1D = np.load(existance[2])
         map1d, vars1d = file1D["map1d"], file1D["vars1d"]
 
-        vars2d_desired_full = np.array([map1d, vars2d_desired[0], vars2d_desired[1]])
+        vars2d_desired_full = [map1d, vars2d_desired[0], vars2d_desired[1]]
         map2d, vars2d = make2dmap(vars2d_desired_full, vars1d)
 
     elif existance[0] is False and existance[1] is False:  # neither map exists, need to create both
         map1d, vars1d = create_1dmap(vars1d_desired)
 
-        vars2d_desired_full = np.array([map1d, vars2d_desired[0], vars2d_desired[1]])
+        vars2d_desired_full = [map1d, vars2d_desired[0], vars2d_desired[1]]
         map2d, vars2d = make2dmap(vars2d_desired_full, vars1d)
 
-        return map1d, map2d, vars1d, vars2d
+    return map1d, map2d, vars1d, vars2d
 
 
 def make_many_images(varsImage, vars2d, vars1d, varsGif):
@@ -321,7 +316,6 @@ def plot_multiple_paths(vars1d):
     for i in range(len(input_phis) / 2 + 1):  # code to choose the order in which all the light paths are plotted
         zorders[i], zorders[-i - 1] = len(input_phis) / 2 - i, len(input_phis) / 2 - i
 
-        fig = plt.figure()
         ax1 = plt.subplot(121, polar=True)
 
         ax2 = plt.subplot(122)
@@ -348,42 +342,6 @@ def plot_multiple_paths(vars1d):
         input_phis = np.reshape(input_phis, (len(input_phis), 1))  # reshape input_phis to work in plt.eventplot
         ax2.eventplot(input_phis, orientation='vertical', colors=vis_colors, lineoffsets=0)
         plt.show()
-
-# Old Code #
-
-
-def travel(path_n, vars1d):
-    '''path_n is an array with 3 values, in the order [R_n, S_n, Phi_n], k is the time-step'''
-    M, L, k = vars1d[3:6]
-    R_n, S_n, Phi_n = path_n
-
-    R_n1 = k * S_n + R_n
-    S_n1 = - k * L**2 * (3 * M - R_n) / R_n**4 + S_n
-    Phi_n1 = k * L / R_n**2 + Phi_n
-
-    return np.array([[R_n1, S_n1, Phi_n1]])
-
-
-def ray_trace_old(vars1d, phi_cam):
-    '''Takes the angle of the camera (along with other values) and outputs path of the light ray.'''
-    vars1d_temp = np.copy(vars1d)  # need since we are changing the k value
-    r_cam, r_sphere, num, M, L, k, phi_max = vars1d_temp
-
-    if phi_cam > 0:
-        vars1d_temp[5] = -k
-
-        R_0 = r_cam
-        S_0 = L / (R_0 * np.tan(phi_cam))
-        Phi_0 = np.pi
-
-        path = np.array([[R_0, S_0, Phi_0]])  # put initial values of R, S and Phi in an array
-
-        while 0 <= path[-1, 0] <= r_sphere:
-            path = np.append(path, travel(path[-1], vars1d_temp), axis=0)
-
-        path[:, 2] = np.mod(path[:, 2], 2 * np.pi)  # make sure all phi vales are between 0 and 2*pi
-
-        return path  # returns an array containing the whole path
 
 
 def find_angle(path):
@@ -445,37 +403,6 @@ def map_to_sphere(theta_cam, phi_cam, vars2d):
         return new_polars[0], new_polars[1]
 
 
-def make2dmap_old(vars2d, vars1d):
-    '''
-    Creates an array, the same size as the final image, containing angles on the celestial sphere for each pixel and saves it.
-    Returns (map2d, vars2d)
-    '''
-    map1d, resolution, F = vars2d
-    FOV = int(F * 180 / np.pi)
-
-    map2d = np.zeros((resolution[0], resolution[1], 2))  # initialise array to put map into
-
-    p = np.nditer(map2d, flags=['multi_index'])  # create iterable for array
-    while not p.finished:
-        if p.multi_index[2] == 0:
-            y, x = p.multi_index[:2]  # get array coordinates
-
-            theta_cam, phi_cam = screen_angles(x, y, vars2d)
-            theta_proper, phi_proper = map_to_sphere(theta_cam, phi_cam, vars2d)
-
-            map2d[y, x] = theta_proper, phi_proper
-
-            if x % 300 == 0:
-                print("Creating 2D Map: %.3f" % (float(resolution[1] * y + x + 1) / ((np.size(map2d)) / 2) * 100))  # progress report
-
-                p.iternext()
-
-        name = "2D Maps/2dmap res=" + str(resolution) + " FOV=%.i M=%.2f r=%.1f" % (FOV, vars1d[3], vars1d[0])
-        np.savez_compressed(name, vars1d=vars1d, vars2d=vars2d, map2d=map2d)
-
-        return map2d, vars2d
-
-
 def get_cel_sphere_color(theta_proper, phi_proper, varsImage, CelestialSphere):
     '''Takes an angle on the celestial sphere and returns the colour'''
     # CelestialSphereName = varsImage[1]
@@ -492,66 +419,6 @@ def get_cel_sphere_color(theta_proper, phi_proper, varsImage, CelestialSphere):
         b = int(phi_proper / (2 * np.pi) * np.shape(CelestialSphere)[1]) % np.shape(CelestialSphere)[1]
 
         return CelestialSphere[a, b]
-
-
-def make_image_old(varsImage, vars2d, vars1d, gif=False, image_no=1):
-    '''Creates and saves the final image as an array with colour values, using get_cel_sphere_color'''
-    map2d, CelestialSphereName, resolution = varsImage
-    F = vars2d[2]
-
-    CelestialSphere = plt.imread("Celestial Spheres/" + CelestialSphereName + ".png")
-
-    final_image = np.zeros((resolution[0], resolution[1], np.shape(CelestialSphere)[2]))  # initalise final image array
-    p = np.nditer(final_image, flags=['multi_index'])  # create iterable for array
-
-    while not p.finished:
-        if p.multi_index[2] == 0:
-            y, x = p.multi_index[:2]
-
-            final_image[y, x] = get_cel_sphere_color(map2d[y, x, 0], map2d[y, x, 1], varsImage, CelestialSphere)
-
-            if x == 0:
-                print("Creating Image " + str(image_no) + ": %.1f" % (float(resolution[1] * y + x + 1) / (resolution[0] * resolution[1]) * 100))  # progress report
-
-                p.iternext()
-
-        FOV = int(vars2d[2] * 180 / np.pi)
-        name = "%.ix%.i FOV=%.i M=%.2f r=%.1f " % (vars2d[1][1], vars2d[1][0], FOV, vars1d[3], vars1d[0]) + CelestialSphereName
-        if gif is False:
-            plt.imsave("Images/" + name + ".png", final_image)  # saves image in "Images" folder
-        elif gif is True:
-            plt.imsave("Images/gif/" + name + str(image_no) + ".png", final_image)
-
-        return final_image
-
-
-def rotate_map_old(varsRotate, image_no=1):
-    '''Takes a 2d map and rotates all the coodinates by the given angles, returns the map with angles used.'''
-    map2d, a, b, c = varsRotate
-    resolution = np.shape(map2d)[:2]
-    map2dRotated = np.zeros_like(map2d)  # initialise output array
-
-    R = rotation_matrix(a, b, c)
-
-    p = np.nditer(map2d, flags=['multi_index'])
-    while not p.finished:
-        y, x = p.multi_index[:2]
-        theta, phi = map2d[y, x]
-
-        if theta != 0 or phi != 0:  # i.e. if not the black hole
-            carts = np.array([np.sin(theta) * np.cos(phi), np.sin(theta) * np.sin(phi), np.cos(theta)])  # calculates cartesian coords from polars
-            new_carts = np.dot(R, carts)  # rotates all the cartesian coords
-
-            new_polars = (np.arccos(new_carts[2]), np.arctan2(new_carts[1], new_carts[0]))  # transforms back to polars
-
-            map2dRotated[y, x] = new_polars
-
-            if x == 0:
-                print("Image " + str(image_no) + " Rotating Map: %.2f" % (float(resolution[1] * y + x + 1) / (resolution[0] * resolution[1]) * 100))  # progress report
-
-                p.iternext()
-
-        return map2dRotated, varsRotate
 
 
 if __name__ == "__main__":
@@ -586,8 +453,8 @@ if __name__ == "__main__":
     b_vals = np.linspace(0, 2 * np.pi, angleNum, endpoint=False)
     c_vals = np.zeros(angleNum)
 
-    vars1d_desired = np.array([r_cam, r_sphere, num, M, L, k, phi_max])
-    vars2d_desired = np.array([resolution, F])
+    vars1d_desired = [r_cam, r_sphere, num, M, L, k, phi_max]
+    vars2d_desired = [resolution, F]
 
     # vars1d = np.array([r_cam, r_sphere, num, M, L, k, phi_max])
     # map1d = create_1dmap(vars1d)[0]
@@ -604,6 +471,6 @@ if __name__ == "__main__":
     # make_many_images(varsImage, vars2d, vars1d, varsGif)
 
     image = make_image(varsImage, vars2d, vars1d, image_no=1)
-    image = imresize(image, 25)
+    # image = imresize(image, 25)
     plt.imshow(image)
     plt.show()
