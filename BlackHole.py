@@ -303,11 +303,11 @@ def loadCreateMaps(vars1d_desired, vars2d_desired):
 def make_many_images(varsImage, vars2d, vars1d, varsGif):
     a_vals, b_vals, c_vals = varsGif
     map2d = varsImage[0]
-    varsImage_temp = np.copy(varsImage)
 
     for i in range(len(a_vals)):
         varsRotate = [map2d, a_vals[i], b_vals[i], c_vals[i]]
-        varsImage_temp[0] = rotate_map(varsRotate, image_no=i + 1)[0]
+        map_temp = rotate_map(varsRotate, image_no=i + 1)[0]
+        varsImage_temp = [map_temp, varsImage[1], varsImage[2]]
 
         make_image(varsImage_temp, vars2d, vars1d, gif=True, image_no=i + 1)
 
@@ -443,7 +443,7 @@ if __name__ == "__main__":
     phi_max = np.pi
 
     # vars2d [map1d, resolution, F]
-    resolution = np.array([4000, 4000])
+    resolution = np.array([500, 500])
     F = 100 * np.pi / 180
 
     # varsImage [map2d, CelestialSphere, resolution]
@@ -455,7 +455,7 @@ if __name__ == "__main__":
     b = 0
     c = 0
 
-    angleNum = 500
+    angleNum = 250
 
     a_vals = np.zeros(angleNum)
     # a_vals.fill(np.pi/4)
@@ -475,11 +475,11 @@ if __name__ == "__main__":
 
     # varsImage = np.array([map2d, CelestialSphere, resolution])
     varsImage = [rotate_map(varsRotate)[0], CelestialSphere, resolution]
-    # varsGif = np.array([a_vals, b_vals, c_vals])
+    varsGif = np.array([a_vals, b_vals, c_vals])
 
-    # make_many_images(varsImage, vars2d, vars1d, varsGif)
+    make_many_images(varsImage, vars2d, vars1d, varsGif)
 
-    image = make_image(varsImage, vars2d, vars1d, image_no=1)
-    # image = imresize(image, 25)
-    plt.imshow(image)
-    plt.show()
+    # image = make_image(varsImage, vars2d, vars1d, image_no=1)
+    # # image = imresize(image, 25)
+    # plt.imshow(image)
+    # plt.show()
