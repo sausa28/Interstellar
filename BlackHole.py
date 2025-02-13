@@ -84,20 +84,23 @@ def create_1dmap(vars1d):
     Returns (map, vars1d)
     '''
     num, phi_max = vars1d[2], vars1d[6]
+    print(f"num = {num}\nphi_max = {phi_max}")
     input_phis = np.linspace(-phi_max, phi_max, num, endpoint=False)
 
     map = np.zeros((len(input_phis), 2))
     map[:, 0] = input_phis
 
     for i in range(len(input_phis)):
-        print("Creating 1D Map: %.2f" % ((i + 1) / float(num) * 100))  # progress report
+        print("Creating 1D Map: %.2f" % ((i + 1) / float(num) * 100), end="")  # progress report
+        print("\r", end="")
         phi_cam = input_phis[i]
         map[i, 1] = ray_trace(vars1d, phi_cam)
 
-        name = "n=%i r1=%.1f r2=%.1f M=%.2f L=%.1f k=%.3f" % (num, vars1d[0], vars1d[1], vars1d[3], vars1d[4], vars1d[5])
-        np.savez_compressed("1D Maps/1dmap " + name, vars1d=vars1d, map1d=map)
+        # name = "n=%i r1=%.1f r2=%.1f M=%.2f L=%.1f k=%.3f" % (num, vars1d[0], vars1d[1], vars1d[3], vars1d[4], vars1d[5])
+        # np.savez_compressed("1D Maps/1dmap " + name, vars1d=vars1d, map1d=map)
 
-        return map, vars1d
+    print("")  # Move cursor down to next line
+    return map, vars1d
 
 
 def make2dmap(vars2d, vars1d):
@@ -107,7 +110,7 @@ def make2dmap(vars2d, vars1d):
     '''
     map1d, resolution, F = vars2d
     FOV = int(F * 180 / np.pi)
-    r_max = np.amax(resolution) / 2
+    r_max = np.amax(resolution) // 2
 
     print("Creating 2d Map")
 
@@ -115,8 +118,8 @@ def make2dmap(vars2d, vars1d):
 
     print("Calculating Screen Angles...")
 
-    xv = -np.arange(resolution[1]) + resolution[1] / 2  # recentre origin to use as coodinates
-    yv = -np.arange(resolution[0]) + resolution[0] / 2
+    xv = -np.arange(resolution[1]) + resolution[1] // 2  # recentre origin to use as coodinates
+    yv = -np.arange(resolution[0]) + resolution[0] // 2
 
     x, y = np.meshgrid(xv, yv)
 
@@ -168,16 +171,17 @@ def make_image(varsImage, vars2d, vars1d, gif=False, image_no=1):
     black = np.zeros((resolution[0], resolution[1], 3))
     if np.shape(CelestialSphere)[2] == 4:  # Take into account whether the celestial sphere is RGB or RGBA
         black = np.concatenate((black, np.ones((resolution[0], resolution[1]))[..., np.newaxis]), axis=2)
-        final_image = np.where(isBlackHole[..., np.newaxis], black, CelestialSphere[yCoords, xCoords])
 
-        FOV = int(vars2d[2] * 180 / np.pi)
-        name = "%.ix%.i FOV=%.i M=%.2f r=%.1f " % (vars2d[1][1], vars2d[1][0], FOV, vars1d[3], vars1d[0]) + CelestialSphereName
-        if not gif:
-            plt.imsave("Images/" + name + ".png", final_image)  # saves image in "Images" folder
-        elif gif:
-            plt.imsave("Images/gif/" + name + str(image_no) + ".png", final_image)
+    final_image = np.where(isBlackHole[..., np.newaxis], black, CelestialSphere[yCoords, xCoords])
 
-        return final_image
+    FOV = int(vars2d[2] * 180 / np.pi)
+    name = "%.ix%.i FOV=%.i M=%.2f r=%.1f " % (vars2d[1][1], vars2d[1][0], FOV, vars1d[3], vars1d[0]) + CelestialSphereName
+    if not gif:
+        plt.imsave("Images/" + name + ".png", final_image)  # saves image in "Images" folder
+    elif gif:
+        plt.imsave("Images/gif/" + name + str(image_no) + ".png", final_image)
+
+    return final_image
 
 # Extra Functions #
 
@@ -287,7 +291,7 @@ def loadCreateMaps(vars1d_desired, vars2d_desired):
         vars2d_desired_full = [map1d, vars2d_desired[0], vars2d_desired[1]]
         map2d, vars2d = make2dmap(vars2d_desired_full, vars1d)
 
-    elif existance[0] is False and existance[1] is False:  # neither map exists, need to create both
+    elif existance[0] is False:  # 1d map does not exist, need to create both
         map1d, vars1d = create_1dmap(vars1d_desired)
 
         vars2d_desired_full = [map1d, vars2d_desired[0], vars2d_desired[1]]
@@ -322,32 +326,31 @@ def plot_multiple_paths(vars1d):
     for i in range(len(input_phis) / 2 + 1):  # code to choose the order in which all the light paths are plotted
         zorders[i], zorders[-i - 1] = len(input_phis) / 2 - i, len(input_phis) / 2 - i
 
-        ax1 = plt.subplot(121, polar=True)
+    ax1 = plt.subplot(121, polar=True)
+    ax2 = plt.subplot(122)
 
-        ax2 = plt.subplot(122)
+    vis_colors = np.zeros((len(input_phis), 4))  # initialize colors array
 
-        vis_colors = np.zeros((len(input_phis), 4))  # initialize colors array
+    for i in range(len(input_phis)):
+        phi_cam = input_phis[i]  # vars[2] = phi_cam
+        path, HitsBlackHole = ray_trace(vars1d, phi_cam)
 
-        for i in range(len(input_phis)):
-            phi_cam = input_phis[i]  # vars[2] = phi_cam
-            path, HitsBlackHole = ray_trace(vars1d, phi_cam)
+        if HitsBlackHole is True:  # if a light ray ends in the black hole, color it black, and set it to be on top
+            vis_colors[i] = [0.0, 0.0, 0.0, 1.0]
+            zorders[i] = len(input_phis)
+        else:
+            angle = find_angle(path)
+            vis_colors[i] = scalar_map.to_rgba(angle)  # color a light ray based on where it 'came from'
 
-            if HitsBlackHole is True:  # if a light ray ends in the black hole, color it black, and set it to be on top
-                vis_colors[i] = [0.0, 0.0, 0.0, 1.0]
-                zorders[i] = len(input_phis)
-            else:
-                angle = find_angle(path)
-                vis_colors[i] = scalar_map.to_rgba(angle)  # color a light ray based on where it 'came from'
+        ax1.plot(path[:, 2], path[:, 0], color=vis_colors[i], zorder=zorders[i], linewidth=0.5)
+        print(i + 1) / float(num) * 100  # progress report
 
-                ax1.plot(path[:, 2], path[:, 0], color=vis_colors[i], zorder=zorders[i], linewidth=0.5)
-                print(i + 1) / float(num) * 100  # progress report
-
-        ax1.set_ylim(0, r_sphere * 1.1)
-        ax1.set_yticks([])
-        print('Now plotting vertical plot...')
-        input_phis = np.reshape(input_phis, (len(input_phis), 1))  # reshape input_phis to work in plt.eventplot
-        ax2.eventplot(input_phis, orientation='vertical', colors=vis_colors, lineoffsets=0)
-        plt.show()
+    ax1.set_ylim(0, r_sphere * 1.1)
+    ax1.set_yticks([])
+    print('Now plotting vertical plot...')
+    input_phis = np.reshape(input_phis, (len(input_phis), 1))  # reshape input_phis to work in plt.eventplot
+    ax2.eventplot(input_phis, orientation='vertical', colors=vis_colors, lineoffsets=0)
+    plt.show()
 
 
 def find_angle(path):
@@ -368,7 +371,7 @@ def find_angle(path):
 
         angle = np.arctan2(y_diff, x_diff)
 
-        return np.mod(angle, 2 * np.pi)
+    return np.mod(angle, 2 * np.pi)
 
 
 def screen_angles(x_, y_, vars2d):
@@ -433,18 +436,18 @@ if __name__ == "__main__":
     # vars1d [r_cam, r_sphere, num, M, L, k, phi_max]
     r_cam = 5.0
     r_sphere = 10.0
-    num = 10000
+    num = 200
     M = 0.5
     L = 1
     k = 1
     phi_max = np.pi
 
     # vars2d [map1d, resolution, F]
-    resolution = np.array([4000, 4000])
+    resolution = np.array([200, 200])
     F = 100 * np.pi / 180
 
     # varsImage [map2d, CelestialSphere, resolution]
-    CelestialSphereName = "Orion"
+    CelestialSphereName = "colour"
     CelestialSphere = plt.imread("Celestial Spheres/" + CelestialSphereName + ".png")
 
     # varsRotate [map2d, a, b, c]
