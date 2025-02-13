@@ -42,40 +42,40 @@ def ray_trace(vars1d, phi_cam):
     if phi_cam > 0:  # determines whether to go backwards or forwards
         k = -k
 
-        y0, t0 = [R_0, S_0, Phi_0], 0
+    y0, t0 = [R_0, S_0, Phi_0], 0
 
-        def evaluator(t, y):
-            '''Looks at a set of points on the path, and decides whether to stop the integration.'''
-            if y[0] < 0.001:  # stop when close enough to the black hole
-                return -1
-            else:
-                return 0
+    def evaluator(t, y):
+        '''Looks at a set of points on the path, and decides whether to stop the integration.'''
+        if y[0] < 0.001:  # stop when close enough to the black hole
+            return -1
+        else:
+            return 0
 
-        r = ode(f).set_integrator('dopri5')
-        r.set_solout(evaluator)
-        r.set_initial_value(y0, t0).set_f_params(M, L)
+    r = ode(f).set_integrator('dopri5')
+    r.set_solout(evaluator)
+    r.set_initial_value(y0, t0).set_f_params(M, L)
 
-        endPoint = r.integrate(k * 1000.)
+    endPoint = r.integrate(k * 1000.)
 
-        # angle = np.arctan2(L, endPoint[0]*endPoint[1])
-        if endPoint[0] < 0.001:
-            angle = np.nan
-        else:  # find the output angle.  See find_angle.
-            justBeforeEndPoint = r.integrate(k * 950.)
+    # angle = np.arctan2(L, endPoint[0]*endPoint[1])
+    if endPoint[0] < 0.001:
+        angle = np.nan
+    else:  # find the output angle.  See find_angle.
+        justBeforeEndPoint = r.integrate(k * 950.)
 
-            p1_polar = (justBeforeEndPoint[0], justBeforeEndPoint[2])
-            p2_polar = (endPoint[0], endPoint[2])
+        p1_polar = (justBeforeEndPoint[0], justBeforeEndPoint[2])
+        p2_polar = (endPoint[0], endPoint[2])
 
-            p1_cart = (p1_polar[0] * np.cos(p1_polar[1]), p1_polar[0] * np.sin(p1_polar[1]))
-            p2_cart = (p2_polar[0] * np.cos(p2_polar[1]), p2_polar[0] * np.sin(p2_polar[1]))
+        p1_cart = (p1_polar[0] * np.cos(p1_polar[1]), p1_polar[0] * np.sin(p1_polar[1]))
+        p2_cart = (p2_polar[0] * np.cos(p2_polar[1]), p2_polar[0] * np.sin(p2_polar[1]))
 
-            y_diff = p2_cart[1] - p1_cart[1]
-            x_diff = p2_cart[0] - p1_cart[0]
+        y_diff = p2_cart[1] - p1_cart[1]
+        x_diff = p2_cart[0] - p1_cart[0]
 
-            angle = np.arctan2(y_diff, x_diff)
+        angle = np.arctan2(y_diff, x_diff)
 
-        # print phi_cam, ' --> ', angle
-        return angle
+    # print phi_cam, ' --> ', angle
+    return angle
 
 
 def create_1dmap(vars1d):
@@ -100,6 +100,7 @@ def create_1dmap(vars1d):
         # np.savez_compressed("1D Maps/1dmap " + name, vars1d=vars1d, map1d=map)
 
     print("")  # Move cursor down to next line
+    print(map)
     return map, vars1d
 
 
