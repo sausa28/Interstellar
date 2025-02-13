@@ -11,6 +11,7 @@ varsGif = [a_vals, b_vals, c_vals] where a_vals, b_vals, c_vals are length num a
 2D Map files contain 3 arrays:  'map2d', 'vars1d' and 'vars2d'
 '''
 
+import pickle
 import os
 import numpy as np
 from scipy.integrate import ode
@@ -143,8 +144,10 @@ def make2dmap(vars2d, vars1d):
 
     map2d = np.concatenate((sphere_theta, sphere_phi), axis=2)
 
-    name = "2D Maps/2dmap res=" + str(resolution) + " FOV=%.i M=%.2f r=%.1f" % (FOV, vars1d[3], vars1d[0])
-    np.savez_compressed(name, vars1d=vars1d, vars2d=vars2d, map2d=map2d)
+    name = "2D Maps/2dmap res=" + str(resolution) + " FOV=%.i M=%.2f r=%.1f.pickle" % (FOV, vars1d[3], vars1d[0])
+    data = {"vars1d": vars1d, "vars2d": vars2d, "map2d": map2d}
+    with open(name, 'wb') as f:
+        pickle.dump(data, f)
 
     return map2d, vars2d
 
@@ -243,7 +246,9 @@ def checkMapsExist(vars1d_desired, vars2d_desired):
             file1D = 'None'
 
         for file in os.listdir("2D Maps"):  # compare existing 2D maps with desired.
-            mapfiletest = np.load("2D Maps/" + file)
+            with open("2D Maps/" + file, 'r') as f:
+                mapfiletest = pickle.load(f)
+
             vars1d_test, vars2d_test = mapfiletest["vars1d"], mapfiletest["vars2d"]
 
             if np.array_equal(vars1d_desired, vars1d_test) and np.array_equal(vars2d_desired[0], vars2d_test[1]) and np.isclose(vars2d_desired[1], vars2d_test[2]):
@@ -269,7 +274,8 @@ def loadCreateMaps(vars1d_desired, vars2d_desired):
     existance = checkMapsExist(vars1d_desired, vars2d_desired)
 
     if existance[0] is True and existance[1] is True:  # both already exist
-        file1D, file2D = np.load(existance[2]), np.load(existance[3])
+        with open(existance[3], "rb") as f2:
+            file1D, file2D = np.load(existance[2]), pickle.load(f2)
 
         map1d, vars1d = file1D["map1d"], file1D["vars1d"]
         map2d, vars2d = file2D["map2d"], file2D["vars2d"]
@@ -296,7 +302,7 @@ def make_many_images(varsImage, vars2d, vars1d, varsGif):
     varsImage_temp = np.copy(varsImage)
 
     for i in range(len(a_vals)):
-        varsRotate = np.array([map2d, a_vals[i], b_vals[i], c_vals[i]])
+        varsRotate = [map2d, a_vals[i], b_vals[i], c_vals[i]]
         varsImage_temp[0] = rotate_map(varsRotate, image_no=i + 1)[0]
 
         make_image(varsImage_temp, vars2d, vars1d, gif=True, image_no=i + 1)
@@ -462,10 +468,10 @@ if __name__ == "__main__":
 
     map2d, vars1d, vars2d = loadCreateMaps(vars1d_desired, vars2d_desired)[1:]
 
-    varsRotate = np.array([map2d, a, b, c])
+    varsRotate = [map2d, a, b, c]
 
     # varsImage = np.array([map2d, CelestialSphere, resolution])
-    varsImage = np.array([rotate_map(varsRotate)[0], CelestialSphere, resolution])
+    varsImage = [rotate_map(varsRotate)[0], CelestialSphere, resolution]
     # varsGif = np.array([a_vals, b_vals, c_vals])
 
     # make_many_images(varsImage, vars2d, vars1d, varsGif)
