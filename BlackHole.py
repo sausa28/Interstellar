@@ -84,7 +84,6 @@ def create_1dmap(vars1d):
     Returns (map, vars1d)
     '''
     num, phi_max = vars1d[2], vars1d[6]
-    print(f"num = {num}\nphi_max = {phi_max}")
     input_phis = np.linspace(-phi_max, phi_max, num, endpoint=False)
 
     map = np.zeros((len(input_phis), 2))
@@ -96,11 +95,11 @@ def create_1dmap(vars1d):
         phi_cam = input_phis[i]
         map[i, 1] = ray_trace(vars1d, phi_cam)
 
-        # name = "n=%i r1=%.1f r2=%.1f M=%.2f L=%.1f k=%.3f" % (num, vars1d[0], vars1d[1], vars1d[3], vars1d[4], vars1d[5])
-        # np.savez_compressed("1D Maps/1dmap " + name, vars1d=vars1d, map1d=map)
-
     print("")  # Move cursor down to next line
-    print(map)
+
+    name = "n=%i r1=%.1f r2=%.1f M=%.2f L=%.1f k=%.3f" % (num, vars1d[0], vars1d[1], vars1d[3], vars1d[4], vars1d[5])
+    np.savez_compressed("1D Maps/1dmap " + name, vars1d=vars1d, map1d=map)
+
     return map, vars1d
 
 
@@ -250,20 +249,20 @@ def checkMapsExist(vars1d_desired, vars2d_desired):
             map1DExists = False
             file1D = 'None'
 
-        for file in os.listdir("2D Maps"):  # compare existing 2D maps with desired.
-            with open("2D Maps/" + file, 'r') as f:
-                mapfiletest = pickle.load(f)
+    for file in os.listdir("2D Maps"):  # compare existing 2D maps with desired.
+        with open("2D Maps/" + file, 'rb') as f:
+            mapfiletest = pickle.load(f)
 
-            vars1d_test, vars2d_test = mapfiletest["vars1d"], mapfiletest["vars2d"]
+        vars1d_test, vars2d_test = mapfiletest["vars1d"], mapfiletest["vars2d"]
 
-            if np.array_equal(vars1d_desired, vars1d_test) and np.array_equal(vars2d_desired[0], vars2d_test[1]) and np.isclose(vars2d_desired[1], vars2d_test[2]):
-                # we want to just compare the resolution and fov.
-                map2DExists = True
-                file2D = "2D Maps/" + file  # get file path
-                break
-            else:
-                map2DExists = False
-                file2D = 'None'
+        if np.array_equal(vars1d_desired, vars1d_test) and np.array_equal(vars2d_desired[0], vars2d_test[1]) and np.isclose(vars2d_desired[1], vars2d_test[2]):
+            # we want to just compare the resolution and fov.
+            map2DExists = True
+            file2D = "2D Maps/" + file  # get file path
+            break
+        else:
+            map2DExists = False
+            file2D = 'None'
 
     return map1DExists, map2DExists, file1D, file2D
 
@@ -391,10 +390,10 @@ def screen_angles(x_, y_, vars2d):
     else:
         sign_y = np.sign(y)
 
-        theta_cam = np.mod(np.arctan2(y, x), np.pi)
-        phi_cam = np.arctan((sign_y * np.sqrt(x**2 + y**2)) / r_max * np.tan(F / 2))
+    theta_cam = np.mod(np.arctan2(y, x), np.pi)
+    phi_cam = np.arctan((sign_y * np.sqrt(x**2 + y**2)) / r_max * np.tan(F / 2))
 
-        return theta_cam, phi_cam
+    return theta_cam, phi_cam
 
 
 def map_to_sphere(theta_cam, phi_cam, vars2d):
@@ -437,14 +436,14 @@ if __name__ == "__main__":
     # vars1d [r_cam, r_sphere, num, M, L, k, phi_max]
     r_cam = 5.0
     r_sphere = 10.0
-    num = 200
+    num = 10000
     M = 0.5
     L = 1
     k = 1
     phi_max = np.pi
 
     # vars2d [map1d, resolution, F]
-    resolution = np.array([200, 200])
+    resolution = np.array([4000, 4000])
     F = 100 * np.pi / 180
 
     # varsImage [map2d, CelestialSphere, resolution]
