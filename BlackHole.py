@@ -157,7 +157,7 @@ def make2dmap(vars2d, vars1d):
 
 def make_image(varsImage, vars2d, vars1d, gif=False, image_no=1):
     '''Creates and saves the final image as an array with colour values based on the celestial sphere chosen.'''
-    map2d, CelestialSphere, resolution = varsImage
+    map2d, CelestialSphere, CelestialSphereName, resolution = varsImage
 
     print("Creating Image " + str(image_no) + "...")
 
@@ -307,14 +307,14 @@ def make_many_images(varsImage, vars2d, vars1d, varsGif):
     for i in range(len(a_vals)):
         varsRotate = [map2d, a_vals[i], b_vals[i], c_vals[i]]
         map_temp = rotate_map(varsRotate, image_no=i + 1)[0]
-        varsImage_temp = [map_temp, varsImage[1], varsImage[2]]
+        varsImage_temp = [map_temp, varsImage[1], varsImage[2], varsImage[3]]
 
         make_image(varsImage_temp, vars2d, vars1d, gif=True, image_no=i + 1)
 
 
 def plot_multiple_paths(vars1d):
 
-    phi_max, num = vars1d[6], vars1d[2]
+    r_sphere, phi_max, num = vars1d[1], vars1d[6], vars1d[2]
 
     input_phis = np.linspace(-phi_max, phi_max, num, endpoint=True)
 
@@ -482,8 +482,8 @@ def main():
 
     varsRotate = [map2d, a, b, c]
 
-    # varsImage = np.array([map2d, CelestialSphere, resolution])
-    varsImage = [rotate_map(varsRotate)[0], CelestialSphere, resolution]
+    # varsImage = np.array([map2d, CelestialSphere, CelestialSphereName, resolution])
+    varsImage = [rotate_map(varsRotate)[0], CelestialSphere, CelestialSphereName, resolution]
     varsGif = np.array([a_vals, b_vals, c_vals])
 
     make_many_images(varsImage, vars2d, vars1d, varsGif)
