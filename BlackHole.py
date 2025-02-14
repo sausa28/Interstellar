@@ -430,13 +430,13 @@ def get_cel_sphere_color(theta_proper, phi_proper, varsImage, CelestialSphere):
         return CelestialSphere[a, b]
 
 
-if __name__ == "__main__":
+def main():
     # Desired Variables #
 
     # vars1d [r_cam, r_sphere, num, M, L, k, phi_max]
     r_cam = 5.0
     r_sphere = 10.0
-    num = 10000
+    num = 10000  # iterations when integrating along a light path
     M = 0.5
     L = 1
     k = 1
@@ -483,3 +483,7 @@ if __name__ == "__main__":
     # # image = imresize(image, 25)
     # plt.imshow(image)
     # plt.show()
+
+
+if __name__ == "__main__":
+    main()
