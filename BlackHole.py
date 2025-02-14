@@ -430,7 +430,16 @@ def get_cel_sphere_color(theta_proper, phi_proper, varsImage, CelestialSphere):
         return CelestialSphere[a, b]
 
 
+def initialiseDirectories():
+    os.makedirs("1D Maps", exist_ok=True)
+    os.makedirs("2D Maps", exist_ok=True)
+    os.makedirs("Celestial Spheres", exist_ok=True)
+    os.makedirs("Images", exist_ok=True)
+    os.makedirs("Images/gif", exist_ok=True)
+
+
 def main():
+    initialiseDirectories()
     # Desired Variables #
 
     # vars1d [r_cam, r_sphere, num, M, L, k, phi_max]
