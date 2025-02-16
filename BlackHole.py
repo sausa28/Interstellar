@@ -98,7 +98,10 @@ def create_1dmap(vars1d):
     print("")  # Move cursor down to next line
 
     name = "n=%i r1=%.1f r2=%.1f M=%.2f L=%.1f k=%.3f" % (num, vars1d[0], vars1d[1], vars1d[3], vars1d[4], vars1d[5])
-    np.savez_compressed("1D Maps/1dmap " + name, vars1d=vars1d, map1d=map)
+    filename = f"1D Maps/1dmap {name}.pickle"
+    data = {"vars1d": vars1d, "map1d": map}
+    with open(filename, 'wb') as f:
+        pickle.dump(data, f)
 
     return map, vars1d
 
@@ -240,7 +243,10 @@ def checkMapsExist(vars1d_desired, vars2d_desired):
     map1DExists, map2DExists, file1D, file2D = False, False, 'None', 'None'
 
     for file in os.listdir("1D Maps"):  # compare all existing 1D maps to desired map
-        vars1d_test = np.load("1D Maps/" + file)["vars1d"]
+        with open("1D Maps/" + file, 'rb') as f:
+            mapfiledata = pickle.load(f)
+
+        vars1d_test = mapfiledata["vars1d"]
         if np.array_equal(vars1d_desired, vars1d_test):
             map1DExists = True
             file1D = "1D Maps/" + file  # get file path
@@ -251,9 +257,9 @@ def checkMapsExist(vars1d_desired, vars2d_desired):
 
     for file in os.listdir("2D Maps"):  # compare existing 2D maps with desired.
         with open("2D Maps/" + file, 'rb') as f:
-            mapfiletest = pickle.load(f)
+            mapfiledata = pickle.load(f)
 
-        vars1d_test, vars2d_test = mapfiletest["vars1d"], mapfiletest["vars2d"]
+        vars1d_test, vars2d_test = mapfiledata["vars1d"], mapfiledata["vars2d"]
 
         if np.array_equal(vars1d_desired, vars1d_test) and np.array_equal(vars2d_desired[0], vars2d_test[1]) and np.isclose(vars2d_desired[1], vars2d_test[2]):
             # we want to just compare the resolution and fov.
@@ -278,14 +284,16 @@ def loadCreateMaps(vars1d_desired, vars2d_desired):
     existance = checkMapsExist(vars1d_desired, vars2d_desired)
 
     if existance[0] is True and existance[1] is True:  # both already exist
-        with open(existance[3], "rb") as f2:
-            file1D, file2D = np.load(existance[2]), pickle.load(f2)
+        with open(existance[2], "rb") as f1, open(existance[3], "rb") as f2:
+            file1D, file2D = pickle.load(f1), pickle.load(f2)
 
         map1d, vars1d = file1D["map1d"], file1D["vars1d"]
         map2d, vars2d = file2D["map2d"], file2D["vars2d"]
 
     elif existance[0] is True and existance[1] is False:  # only 1d map exists, need to create 2d map
-        file1D = np.load(existance[2])
+        with open(existance[2], "rb") as f1:
+            file1D = pickle.load(f1)
+
         map1d, vars1d = file1D["map1d"], file1D["vars1d"]
 
         vars2d_desired_full = [map1d, vars2d_desired[0], vars2d_desired[1]]
