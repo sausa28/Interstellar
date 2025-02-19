@@ -446,18 +446,18 @@ def initialiseDirectories():
     os.makedirs("Images/gif", exist_ok=True)
 
 
-def main():
+def main() -> None:
     initialiseDirectories()
     # Desired Variables #
 
     # vars1d [r_cam, r_sphere, num, M, L, k, phi_max]
-    r_cam = 5.0
-    r_sphere = 10.0
-    num = 10000  # iterations when integrating along a light path
-    M = 0.5
-    L = 1
-    k = 1
-    phi_max = np.pi
+    r_cam: float = 5.0
+    r_sphere: float = 10.0
+    num: int = 10000  # iterations when integrating along a light path
+    M: float = 0.5
+    L: float = 1
+    k: int = 1
+    phi_max: float = np.pi
 
     # vars2d [map1d, resolution, F]
     resolution = np.array([500, 500])
