@@ -17,6 +17,7 @@ import numpy as np
 from scipy.integrate import ode
 import matplotlib.pyplot as plt
 import matplotlib as mpl
+from PIL import Image
 
 # Core Functions #
 
@@ -162,8 +163,6 @@ def make_image(varsImage, vars2d, vars1d, gif=False, image_no=1):
     '''Creates and saves the final image as an array with colour values based on the celestial sphere chosen.'''
     map2d, CelestialSphere, CelestialSphereName, resolution = varsImage
 
-    print("Creating Image " + str(image_no) + "...")
-
     map2d = np.nan_to_num(map2d)
 
     # normalise the coordinate arrays to the size of the celestial sphere.
@@ -181,8 +180,6 @@ def make_image(varsImage, vars2d, vars1d, gif=False, image_no=1):
     name = "%.ix%.i FOV=%.i M=%.2f r=%.1f " % (vars2d[1][1], vars2d[1][0], FOV, vars1d[3], vars1d[0]) + CelestialSphereName
     if not gif:
         plt.imsave("Images/" + name + ".png", final_image)  # saves image in "Images" folder
-    elif gif:
-        plt.imsave("Images/gif/" + name + str(image_no) + ".png", final_image)
 
     return final_image
 
@@ -312,13 +309,24 @@ def make_many_images(varsImage, vars2d, vars1d, varsGif):
     a_vals, b_vals, c_vals = varsGif
     map2d = varsImage[0]
 
+    CelestialSphereName = varsImage[2]
+    FOV = int(vars2d[2] * 180 / np.pi)
+    gif_dir = "Images/gif/%.ix%.i FOV=%.i M=%.2f r=%.1f " % (vars2d[1][1], vars2d[1][0], FOV, vars1d[3], vars1d[0]) + CelestialSphereName
+
+    frames = []
     for i in range(len(a_vals)):
         varsRotate = [map2d, a_vals[i], b_vals[i], c_vals[i]]
         map_temp = rotate_map(varsRotate, image_no=i + 1)[0]
         varsImage_temp = [map_temp, varsImage[1], varsImage[2], varsImage[3]]
 
-        make_image(varsImage_temp, vars2d, vars1d, gif=True, image_no=i + 1)
+        print("Creating Image " + str(i + 1) + "...")
+        image = make_image(varsImage_temp, vars2d, vars1d, gif=True, image_no=i + 1)
 
+        imname = f"{gif_dir}/{i+1}.png"
+        plt.imsave(imname, image)
+        frames.append(Image.open(imname))
+
+    frames[0].save(f"{gif_dir}.gif", format="GIF", save_all=True, append_images=frames[1:], duration=10, loop=0)
 
 def plot_multiple_paths(vars1d):
 

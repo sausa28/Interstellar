@@ -1,4 +1,5 @@
 numpy
 scipy
 matplotlib
+pillow
 git+https://github.com/microsoft/python-type-stubs.git
