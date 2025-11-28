@@ -206,10 +206,8 @@ def rotation_matrix(a, b, c):
     return R
 
 
-def rotate_map(varsRotate, image_no=1):
+def rotate_map(varsRotate):
     '''Takes a 2d map and rotates all the coodinates by the given angles, returns the map with angles used.'''
-
-    # print "Rotating Image " + str(image_no) + "..."
 
     map2d, a, b, c = varsRotate
 
@@ -226,7 +224,7 @@ def rotate_map(varsRotate, image_no=1):
 
     map2dRotated = np.concatenate((new_thetas, new_phis), axis=2)
 
-    return map2dRotated, varsRotate
+    return map2dRotated
 
 
 def checkMapsExist(vars1d_desired, vars2d_desired):
@@ -312,21 +310,24 @@ def make_many_images(varsImage, vars2d, vars1d, varsGif):
     CelestialSphereName = varsImage[2]
     FOV = int(vars2d[2] * 180 / np.pi)
     gif_dir = "Images/gif/%.ix%.i FOV=%.i M=%.2f r=%.1f " % (vars2d[1][1], vars2d[1][0], FOV, vars1d[3], vars1d[0]) + CelestialSphereName
+    os.makedirs(gif_dir, exist_ok=True)
 
     frames = []
     for i in range(len(a_vals)):
         varsRotate = [map2d, a_vals[i], b_vals[i], c_vals[i]]
-        map_temp = rotate_map(varsRotate, image_no=i + 1)[0]
+        map_temp = rotate_map(varsRotate)
         varsImage_temp = [map_temp, varsImage[1], varsImage[2], varsImage[3]]
 
         print("Creating Image " + str(i + 1) + "...")
         image = make_image(varsImage_temp, vars2d, vars1d, gif=True, image_no=i + 1)
 
-        imname = f"{gif_dir}/{i+1}.png"
+        imname = f"{gif_dir}/{i + 1}.png"
         plt.imsave(imname, image)
         frames.append(Image.open(imname))
 
+    print("Compiling gif...")
     frames[0].save(f"{gif_dir}.gif", format="GIF", save_all=True, append_images=frames[1:], duration=10, loop=0)
+
 
 def plot_multiple_paths(vars1d):
 
@@ -462,30 +463,29 @@ def main() -> None:
     r_cam: float = 5.0
     r_sphere: float = 10.0
     num: int = 10000  # iterations when integrating along a light path
-    M: float = 0.5
+    M: float = 0.25
     L: float = 1
     k: int = 1
     phi_max: float = np.pi
 
     # vars2d [map1d, resolution, F]
-    resolution = np.array([500, 500])
-    F = 100 * np.pi / 180
+    resolution = np.array([500, 750])
+    F = 130 * np.pi / 180
 
     # varsImage [map2d, CelestialSphere, resolution]
-    CelestialSphereName = "colour"
+    CelestialSphereName = "saturn"
     CelestialSphere = plt.imread("Celestial Spheres/" + CelestialSphereName + ".png")
 
     # varsRotate [map2d, a, b, c]
-    a = 0
+    a = np.pi / 2
     b = 0
     c = 0
 
-    angleNum = 250
+    angleNum = 50
 
     a_vals = np.zeros(angleNum)
-    # a_vals.fill(np.pi/4)
-    b_vals = np.linspace(0, 2 * np.pi, angleNum, endpoint=False)
-    c_vals = np.zeros(angleNum)
+    b_vals = np.zeros(angleNum)
+    c_vals = np.linspace(0, 2 * np.pi, angleNum, endpoint=False)
 
     vars1d_desired = [r_cam, r_sphere, num, M, L, k, phi_max]
     vars2d_desired = [resolution, F]
@@ -499,7 +499,7 @@ def main() -> None:
     varsRotate = [map2d, a, b, c]
 
     # varsImage = np.array([map2d, CelestialSphere, CelestialSphereName, resolution])
-    varsImage = [rotate_map(varsRotate)[0], CelestialSphere, CelestialSphereName, resolution]
+    varsImage = [rotate_map(varsRotate), CelestialSphere, CelestialSphereName, resolution]
     varsGif = np.array([a_vals, b_vals, c_vals])
 
     make_many_images(varsImage, vars2d, vars1d, varsGif)
